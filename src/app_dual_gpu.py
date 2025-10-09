@@ -32,11 +32,11 @@ NUM_EXTRACTION_PROCESSES = 4    # Total processes for face extraction (will be s
                                 # Memory impact: ~2-3GB GPU memory per process
                                 # ⚠️  DO NOT exceed: (GPU_Memory_GB / 4) processes per GPU
 
-NUM_CLUSTERING_WORKERS = 8      # Parallel workers for clustering pair finding
+NUM_CLUSTERING_WORKERS = 16      # Parallel workers for clustering pair finding
                                 # Recommended: 4-16 workers (CPU-bound task)
                                 # Higher is better for large datasets
 
-NUM_DRAWING_WORKERS = 8         # Parallel workers for drawing bounding boxes
+NUM_DRAWING_WORKERS = 16         # Parallel workers for drawing bounding boxes
                                 # Recommended: 4-16 workers (I/O-bound task)
                                 # Higher is better but has diminishing returns
 
@@ -148,14 +148,18 @@ def main():
     all_files = [f for f in os.listdir(DATA_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
     print(f"\n📸 Total files: {len(all_files)}")
     
-    # Split menjadi N bagian untuk parallel extraction
-    chunk_size = len(all_files) // NUM_EXTRACTION_PROCESSES
-    file_chunks = []
+    # Split menjadi N bagian untuk parallel extraction (balanced distribution)
+    total_files = len(all_files)
+    base_chunk_size = total_files // NUM_EXTRACTION_PROCESSES
+    remainder = total_files % NUM_EXTRACTION_PROCESSES
     
+    file_chunks = []
+    current_idx = 0
     for i in range(NUM_EXTRACTION_PROCESSES):
-        start_idx = i * chunk_size
-        end_idx = start_idx + chunk_size if i < NUM_EXTRACTION_PROCESSES - 1 else len(all_files)
-        file_chunks.append(all_files[start_idx:end_idx])
+        # Processes dengan ID < remainder mendapat 1 file extra untuk balance
+        chunk_size = base_chunk_size + (1 if i < remainder else 0)
+        file_chunks.append(all_files[current_idx:current_idx + chunk_size])
+        current_idx += chunk_size
     
     # Display split info
     processes_per_gpu = NUM_EXTRACTION_PROCESSES // 2
@@ -263,15 +267,23 @@ def main():
         result_list.append((worker_id, pairs))
         print(f"      ✅ Worker {worker_id}: Found {len(pairs)} pairs")
     
-    # Split work among clustering workers
-    chunk_size = len(embeddings) // NUM_CLUSTERING_WORKERS
+    # Split work among clustering workers (balanced distribution)
+    total_embeddings = len(embeddings)
+    base_chunk_size = total_embeddings // NUM_CLUSTERING_WORKERS
+    remainder = total_embeddings % NUM_CLUSTERING_WORKERS
+    
     manager = Manager()
     result_list = manager.list()
     processes = []
     
+    current_idx = 0
     for worker_id in range(NUM_CLUSTERING_WORKERS):
-        start_idx = worker_id * chunk_size
-        end_idx = start_idx + chunk_size if worker_id < NUM_CLUSTERING_WORKERS - 1 else len(embeddings)
+        # Workers dengan ID < remainder mendapat 1 embedding extra untuk balance
+        chunk_size = base_chunk_size + (1 if worker_id < remainder else 0)
+        start_idx = current_idx
+        end_idx = current_idx + chunk_size
+        current_idx = end_idx
+        
         p = Process(target=find_pairs_worker, args=(worker_id, start_idx, end_idx, distances, indices, THRESHOLD, result_list))
         processes.append(p)
         p.start()
@@ -328,18 +340,22 @@ def main():
     print("\n💾 Saving results...")
     print(f"🎨 Drawing bounding boxes dengan {NUM_DRAWING_WORKERS} workers parallel...\n")
     
-    # Split indices untuk parallel drawing
+    # Split indices untuk parallel drawing (balanced distribution)
     all_indices = list(range(len(paths)))
-    chunk_size = len(all_indices) // NUM_DRAWING_WORKERS
+    total_images = len(all_indices)
+    base_chunk_size = total_images // NUM_DRAWING_WORKERS
+    remainder = total_images % NUM_DRAWING_WORKERS
     
     # Buat proses parallel untuk drawing
     draw_start = time.time()
     draw_processes = []
     
+    current_idx = 0
     for worker_id in range(NUM_DRAWING_WORKERS):
-        start_idx = worker_id * chunk_size
-        end_idx = start_idx + chunk_size if worker_id < NUM_DRAWING_WORKERS - 1 else len(all_indices)
-        worker_indices = all_indices[start_idx:end_idx]
+        # Workers dengan ID < remainder mendapat 1 image extra untuk balance
+        chunk_size = base_chunk_size + (1 if worker_id < remainder else 0)
+        worker_indices = all_indices[current_idx:current_idx + chunk_size]
+        current_idx += chunk_size
         
         p = Process(target=draw_boxes_parallel, args=(worker_id, worker_indices, paths, face_boxes, idx_to_cluster))
         draw_processes.append(p)
