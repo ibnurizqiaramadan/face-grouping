@@ -1,2 +1,8 @@
-clusters_output
-clusters_output_labeled
+clusters_output/
+clusters_output_labeled/
+*.pyc
+__pycache__/
+.DS_Store
+*.swp
+*.swo
+*~

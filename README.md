@@ -23,18 +23,31 @@ pip install -r requirements.txt
 
 ## Cara Pakai
 
-### Option 1: Menggunakan script wrapper (RECOMMENDED)
+### Option 1: Single GPU (Standard)
 ```bash
 ./run_gpu.sh
 ```
 
-### Option 2: Jalankan langsung
+### Option 2: Dual GPU (Parallel Processing - FASTER!)
 ```bash
-conda activate facecluster-gpu
-python app.py
+./run_dual_gpu.sh
 ```
 
-**Note:** Jika langsung pakai `python app.py` dan dapat error CUDA libraries, gunakan `run_gpu.sh` yang sudah set LD_LIBRARY_PATH otomatis.
+**Dual GPU Mode Features:**
+- Split dataset secara otomatis ke 2 GPU
+- Process parallel dengan multiprocessing
+- ~10% lebih cepat untuk dataset besar
+- Merge hasil otomatis sebelum clustering
+
+### Option 3: Jalankan langsung
+```bash
+conda activate facecluster-gpu
+python app.py              # Single GPU
+# atau
+python app_dual_gpu.py     # Dual GPU
+```
+
+**Note:** Jika langsung pakai `python` dan dapat error CUDA libraries, gunakan script `run_*.sh` yang sudah set LD_LIBRARY_PATH otomatis.
 
 ## Konfigurasi
 
@@ -52,9 +65,27 @@ export REDIS_DB=0            # Default: 0
 
 ## Performance
 
-- **GPU Mode**: ~2.6 images/second
-- **CPU Mode**: ~1.4 images/second
-- **Speedup**: ~86% lebih cepat dengan GPU
+### End-to-End Pipeline (78 images)
+
+| Mode | Extraction | Clustering | Drawing | Total | Overall Speed |
+|------|-----------|-----------|---------|-------|---------------|
+| CPU | ~56s | ~2s | ~42s | ~98s | 0.8 img/s |
+| Single GPU | ~30s | ~2s | ~42s | ~72s | 1.08 img/s |
+| Dual GPU (2 workers) | ~25s | ~1s | ~22s | ~47s | 1.66 img/s |
+| **Dual GPU (8 workers)** | **~22s** | **~1s** | **~8s** | **~32s** | **2.45 img/s** 🚀 |
+
+### Speedup Analysis
+- **vs CPU**: +207% faster (98s → 32s) 🔥
+- **vs Single GPU**: +132% faster (72s → 32s) ⚡  
+- **vs Dual GPU (2 draw workers)**: +48% faster (47s → 32s)
+
+### Key Features
+- ✅ Parallel face extraction pada 2 GPU (3.48 img/s)
+- ✅ GPU clustering dengan 8 workers (~1s)
+- ✅ Parallel bounding box drawing 8 workers (9.42 img/s) 🔥
+- ✅ Overall throughput: **2.45 images/sec**
+
+📊 **See [PERFORMANCE.md](PERFORMANCE.md) for detailed benchmarks**
 
 ## Output
 
