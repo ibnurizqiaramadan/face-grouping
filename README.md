@@ -81,7 +81,7 @@ export REDIS_DB=0            # Default: 0
 - ✅ Parallel bounding box drawing 8 workers (9.42 img/s) 🔥
 - ✅ Overall throughput: **2.45 images/sec**
 
-📊 **See [PERFORMANCE.md](PERFORMANCE.md) for detailed benchmarks**
+📊 **See [PERFORMANCE.md](docs/PERFORMANCE.md) for detailed benchmarks**
 
 ## Output
 
@@ -138,3 +138,27 @@ r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 result = json.loads(r.get('face_clustering:latest'))
 print(f"Total clusters: {result['total_clusters']}")
 ```
+
+---
+
+## 📚 Documentation
+
+For detailed documentation, see the `docs/` folder:
+
+- **[CONFIG_GUIDE.md](docs/CONFIG_GUIDE.md)** - Complete configuration guide
+- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[PERFORMANCE.md](docs/PERFORMANCE.md)** - Detailed performance benchmarks
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture and design
+- **[SUMMARY.md](docs/SUMMARY.md)** - Project overview and quick reference
+- **[CHANGELOG.md](docs/CHANGELOG.md)** - Version history and changes
+
+Scripts documentation:
+- **[scripts/README.md](scripts/README.md)** - Shell scripts usage guide
+
+---
+
+## 🎯 Quick Links
+
+- **Configuration**: See [docs/CONFIG_GUIDE.md](docs/CONFIG_GUIDE.md)
+- **Troubleshooting**: See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- **Performance Tuning**: See [docs/PERFORMANCE.md](docs/PERFORMANCE.md)

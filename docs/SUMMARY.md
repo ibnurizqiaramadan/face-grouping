@@ -50,18 +50,26 @@ High-performance face clustering system dengan dual GPU support, parallel proces
 
 ```
 face-grouping/
-├── src/
+├── src/                    # Python source code
 │   ├── app.py              # Single GPU version
 │   ├── app_dual_gpu.py     # Dual GPU + parallel drawing
 │   └── check_redis.py      # Redis data viewer
-├── scripts/
+├── scripts/                # Shell scripts
 │   ├── run_gpu.sh          # Single GPU launcher
 │   ├── run_dual_gpu.sh     # Dual GPU launcher
-│   └── monitor_gpu.sh      # GPU monitor
-├── requirements.txt        # Python dependencies
+│   ├── monitor_gpu.sh      # GPU monitor
+│   └── README.md           # Scripts documentation
+├── docs/                   # Documentation
+│   ├── README.md           # Documentation index
+│   ├── ARCHITECTURE.md     # System architecture
+│   ├── CONFIG_GUIDE.md     # Configuration guide
+│   ├── PERFORMANCE.md      # Detailed benchmarks
+│   ├── TROUBLESHOOTING.md  # Problem solving
+│   ├── SUMMARY.md          # This file
+│   ├── CHANGELOG.md        # Version history
+│   └── FINAL_STATUS.md     # Current status
 ├── README.md               # Main documentation
-├── PERFORMANCE.md          # Detailed benchmarks
-├── CHANGELOG.md            # Version history
+├── requirements.txt        # Python dependencies
 └── clusters_output_labeled/  # Output folder
     ├── person_0/
     ├── person_1/

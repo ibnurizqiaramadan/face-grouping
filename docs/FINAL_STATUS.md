@@ -105,24 +105,32 @@ Worker 0  Worker 1  ← Draw Boxes (parallel)
 
 ```
 face-grouping/
-├── src/
+├── src/                        # 🐍 Python source code
 │   ├── app.py                  # Single GPU version
 │   ├── app_dual_gpu.py        # ⭐ Main: Dual GPU + 8 workers
 │   └── check_redis.py         # Redis data viewer
-├── scripts/
+│
+├── scripts/                    # 📜 Shell scripts
 │   ├── run_gpu.sh             # Single GPU launcher
 │   ├── run_dual_gpu.sh        # ⭐ Dual GPU launcher
-│   └── monitor_gpu.sh         # GPU utilization monitor
+│   ├── monitor_gpu.sh         # GPU utilization monitor
+│   └── README.md              # Scripts documentation
 │
+├── docs/                       # 📚 Documentation
+│   ├── README.md              # Documentation index
+│   ├── ARCHITECTURE.md        # System architecture
+│   ├── CHANGELOG.md           # Version history
+│   ├── CONFIG_GUIDE.md        # Configuration guide
+│   ├── FINAL_STATUS.md        # This file
+│   ├── PERFORMANCE.md         # Detailed benchmarks
+│   ├── SUMMARY.md             # Project overview
+│   └── TROUBLESHOOTING.md     # Problem solving guide
+│
+├── README.md                  # ⭐ Main documentation
 ├── requirements.txt           # Python dependencies
-├── README.md                  # Main documentation
-├── PERFORMANCE.md             # Detailed benchmarks
-├── ARCHITECTURE.md            # System architecture
-├── SUMMARY.md                 # Project overview
-├── CHANGELOG.md               # Version history
-├── FINAL_STATUS.md            # This file
+├── .gitignore                 # Git ignore rules
 │
-└── clusters_output_labeled/   # Output folder
+└── clusters_output_labeled/   # 📁 Output folder
     ├── person_0/ (13 images)
     ├── person_1/ (12 images)
     ├── person_3/ (15 images)
