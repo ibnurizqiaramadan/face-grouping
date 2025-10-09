@@ -50,11 +50,14 @@ High-performance face clustering system dengan dual GPU support, parallel proces
 
 ```
 face-grouping/
-├── app.py                  # Single GPU version
-├── app_dual_gpu.py         # Dual GPU + parallel drawing
-├── run_gpu.sh              # Single GPU launcher
-├── run_dual_gpu.sh         # Dual GPU launcher
-├── check_redis.py          # Redis data viewer
+├── src/
+│   ├── app.py              # Single GPU version
+│   ├── app_dual_gpu.py     # Dual GPU + parallel drawing
+│   └── check_redis.py      # Redis data viewer
+├── scripts/
+│   ├── run_gpu.sh          # Single GPU launcher
+│   ├── run_dual_gpu.sh     # Dual GPU launcher
+│   └── monitor_gpu.sh      # GPU monitor
 ├── requirements.txt        # Python dependencies
 ├── README.md               # Main documentation
 ├── PERFORMANCE.md          # Detailed benchmarks
@@ -67,19 +70,19 @@ face-grouping/
 
 ## 🚀 Quick Start
 
-### Single GPU (Standard)
+### Single GPU
 ```bash
-./run_gpu.sh
+./scripts/run_gpu.sh
 ```
 
 ### Dual GPU (Recommended)
 ```bash
-./run_dual_gpu.sh
+./scripts/run_dual_gpu.sh
 ```
 
 ### Check Results
 ```bash
-python check_redis.py
+python src/check_redis.py
 ```
 
 ## 📈 Scalability

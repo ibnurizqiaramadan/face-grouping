@@ -2,7 +2,7 @@
 
 ## Performance Configuration
 
-All performance settings are located at the top of `app_dual_gpu.py` (lines 25-45).
+All performance settings are located at the top of `src/app_dual_gpu.py` (lines 25-45).
 
 ### Quick Reference
 
@@ -294,7 +294,7 @@ After making changes, test with a small subset:
 
 1. Copy 20-30 images to a test folder
 2. Update `DATA_DIR` temporarily
-3. Run: `./run_dual_gpu.sh`
+3. Run: `./scripts/run_dual_gpu.sh`
 4. Check results in `clusters_output_labeled/`
 5. Adjust THRESHOLD if needed
 6. Restore `DATA_DIR` and run full dataset
@@ -305,7 +305,7 @@ After making changes, test with a small subset:
 
 ### Watch GPU Usage
 ```bash
-./monitor_gpu.sh
+./scripts/monitor_gpu.sh
 ```
 
 Look for:
@@ -315,7 +315,7 @@ Look for:
 
 ### Check Results
 ```bash
-python check_redis.py
+python src/check_redis.py
 ```
 
 Look for:

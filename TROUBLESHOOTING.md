@@ -15,7 +15,7 @@ CUDA failure 2: out of memory
 Too many extraction processes running simultaneously on the same GPU.
 
 #### Solution:
-Reduce `NUM_EXTRACTION_PROCESSES` in `app_dual_gpu.py`:
+Reduce `NUM_EXTRACTION_PROCESSES` in `src/app_dual_gpu.py`:
 
 ```python
 NUM_EXTRACTION_PROCESSES = 2  # Start with 2 (1 per GPU)
@@ -35,7 +35,7 @@ NUM_EXTRACTION_PROCESSES = 2  # Start with 2 (1 per GPU)
 #### Error Message:
 ```
 KeyError: 0
-File "app_dual_gpu.py", line 192, in main
+File "src/app_dual_gpu.py", line 192, in main
     results = [result_dict[i] for i in range(NUM_EXTRACTION_PROCESSES)]
 ```
 
@@ -233,7 +233,7 @@ export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 
 **D. Use the provided script:**
 ```bash
-./run_dual_gpu.sh  # Already sets LD_LIBRARY_PATH
+./scripts/run_dual_gpu.sh  # Already sets LD_LIBRARY_PATH
 ```
 
 ---
@@ -251,7 +251,7 @@ This is cosmetic only. The script is working correctly.
 
 To reduce clutter, redirect output:
 ```bash
-./run_dual_gpu.sh 2>&1 | tee output.log
+./scripts/run_dual_gpu.sh 2>&1 | tee output.log
 ```
 
 ---
@@ -289,13 +289,13 @@ Run with different configs and note times:
 
 ```bash
 # Test 1: Conservative
-NUM_EXTRACTION_PROCESSES=2 ./run_dual_gpu.sh
+NUM_EXTRACTION_PROCESSES=2 ./scripts/run_dual_gpu.sh
 
 # Test 2: Balanced
-NUM_EXTRACTION_PROCESSES=4 ./run_dual_gpu.sh
+NUM_EXTRACTION_PROCESSES=4 ./scripts/run_dual_gpu.sh
 
 # Test 3: Aggressive (may OOM)
-NUM_EXTRACTION_PROCESSES=6 ./run_dual_gpu.sh
+NUM_EXTRACTION_PROCESSES=6 ./scripts/run_dual_gpu.sh
 ```
 
 Compare total times and find sweet spot.
@@ -338,7 +338,7 @@ NUM_DRAWING_WORKERS = 16
 
 ### Enable Verbose Logging
 
-Add to `app_dual_gpu.py`:
+Add to `src/app_dual_gpu.py`:
 ```python
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -358,10 +358,10 @@ watch -n 1 nvidia-smi
 
 ```bash
 # Time each stage
-time ./run_dual_gpu.sh
+time ./scripts/run_dual_gpu.sh
 
 # Or use Python profiler
-python -m cProfile -o profile.stats app_dual_gpu.py
+python -m cProfile -o profile.stats src/app_dual_gpu.py
 ```
 
 ---
@@ -370,7 +370,7 @@ python -m cProfile -o profile.stats app_dual_gpu.py
 
 If issues persist:
 
-1. **Check logs**: `./run_dual_gpu.sh 2>&1 | tee debug.log`
+1. **Check logs**: `./scripts/run_dual_gpu.sh 2>&1 | tee debug.log`
 2. **Check GPU memory**: `nvidia-smi`
 3. **Check disk space**: `df -h`
 4. **Check system resources**: `htop`

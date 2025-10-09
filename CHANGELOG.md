@@ -25,9 +25,9 @@
 - Overall speedup vs CPU: 107%
 
 ### 📁 New Files
-- `app_dual_gpu.py`: Dual GPU version dengan multiprocessing
-- `run_dual_gpu.sh`: Script untuk run dual GPU mode
-- `check_redis.py`: Helper script untuk baca data dari Redis
+- `src/app_dual_gpu.py`: Dual GPU version dengan multiprocessing
+- `scripts/run_dual_gpu.sh`: Script untuk run dual GPU mode
+- `src/check_redis.py`: Helper script untuk baca data dari Redis
 - `CHANGELOG.md`: This file
 
 ### 🔧 Changes

@@ -105,12 +105,14 @@ Worker 0  Worker 1  ← Draw Boxes (parallel)
 
 ```
 face-grouping/
-├── app.py                      # Single GPU version
-├── app_dual_gpu.py            # ⭐ Main: Dual GPU + 8 workers
-├── run_gpu.sh                 # Single GPU launcher
-├── run_dual_gpu.sh            # ⭐ Dual GPU launcher
-├── check_redis.py             # Redis data viewer
-├── monitor_gpu.sh             # GPU utilization monitor
+├── src/
+│   ├── app.py                  # Single GPU version
+│   ├── app_dual_gpu.py        # ⭐ Main: Dual GPU + 8 workers
+│   └── check_redis.py         # Redis data viewer
+├── scripts/
+│   ├── run_gpu.sh             # Single GPU launcher
+│   ├── run_dual_gpu.sh        # ⭐ Dual GPU launcher
+│   └── monitor_gpu.sh         # GPU utilization monitor
 │
 ├── requirements.txt           # Python dependencies
 ├── README.md                  # Main documentation
@@ -133,28 +135,27 @@ face-grouping/
 
 ### Run Clustering:
 \`\`\`bash
-./run_dual_gpu.sh
+./scripts/run_dual_gpu.sh
 \`\`\`
 
-### Monitor GPUs (separate terminal):
 \`\`\`bash
-./monitor_gpu.sh
+./scripts/monitor_gpu.sh
 \`\`\`
 
 ### Check Results:
-\`\`\`bash
-python check_redis.py
-\`\`\`
+```bash
+python src/check_redis.py
+```
 
 ---
 
 ## 🔧 Configuration
 
 ### Adjust Threshold:
-Edit \`app_dual_gpu.py\` line 26:
-\`\`\`python
+Edit `src/app_dual_gpu.py` line 26:
+```python
 THRESHOLD = 1.0  # Lower = stricter, Higher = looser
-\`\`\`
+```
 
 ### Change Workers:
 \`\`\`python

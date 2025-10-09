@@ -10,5 +10,8 @@ export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.12/site-packages/nvidia/cublas/
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.12/site-packages/nvidia/cuda_runtime/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 
-# Run the app
-python app.py
+# Note: CUDA_VISIBLE_DEVICES will be set per-process in Python
+# to ensure proper GPU isolation
+
+# Run the dual GPU app
+python src/app_dual_gpu.py

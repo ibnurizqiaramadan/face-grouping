@@ -17,34 +17,30 @@ conda install -c pytorch -c nvidia faiss-gpu pytorch-cuda=11.8 -y
 
 ### 3. Install dependencies lainnya (via pip)
 ```bash
-pip install nvidia-pyindex
 pip install -r requirements.txt
-```
-
 ## Cara Pakai
 
-### Option 1: Single GPU (Standard)
+### Option 1: Single GPU
 ```bash
-./run_gpu.sh
+./scripts/run_gpu.sh
 ```
 
 ### Option 2: Dual GPU (Parallel Processing - FASTER!)
 ```bash
-./run_dual_gpu.sh
+./scripts/run_dual_gpu.sh
 ```
 
 **Dual GPU Mode Features:**
 - Split dataset secara otomatis ke 2 GPU
 - Process parallel dengan multiprocessing
-- ~10% lebih cepat untuk dataset besar
 - Merge hasil otomatis sebelum clustering
 
 ### Option 3: Jalankan langsung
 ```bash
 conda activate facecluster-gpu
-python app.py              # Single GPU
+python src/app.py              # Single GPU
 # atau
-python app_dual_gpu.py     # Dual GPU
+python src/app_dual_gpu.py     # Dual GPU
 ```
 
 **Note:** Jika langsung pakai `python` dan dapat error CUDA libraries, gunakan script `run_*.sh` yang sudah set LD_LIBRARY_PATH otomatis.
