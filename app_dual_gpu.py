@@ -22,17 +22,38 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_DB = int(os.getenv('REDIS_DB', 0))
 
-# threshold kemiripan wajah (semakin BESAR, semakin loose)
+# === PERFORMANCE CONFIG ===
+# Adjust these values based on your hardware capabilities
+# Higher values = more parallelism but more memory usage
+# ⚠️  WARNING: Increasing NUM_EXTRACTION_PROCESSES may cause GPU OOM (Out Of Memory)!
+
+NUM_EXTRACTION_PROCESSES = 4    # Total processes for face extraction (will be split: 2 per GPU)
+                                # Recommended: 2-4 for 8GB GPU, 4-6 for 16GB+ GPU
+                                # Memory impact: ~2-3GB GPU memory per process
+                                # ⚠️  DO NOT exceed: (GPU_Memory_GB / 4) processes per GPU
+
+NUM_CLUSTERING_WORKERS = 8      # Parallel workers for clustering pair finding
+                                # Recommended: 4-16 workers (CPU-bound task)
+                                # Higher is better for large datasets
+
+NUM_DRAWING_WORKERS = 8         # Parallel workers for drawing bounding boxes
+                                # Recommended: 4-16 workers (I/O-bound task)
+                                # Higher is better but has diminishing returns
+
+# === CLUSTERING CONFIG ===
+# Threshold untuk kemiripan wajah (semakin BESAR, semakin loose)
+# Recommended: 0.8-1.2 for face clustering
+# Lower = stricter matching, Higher = looser matching
 THRESHOLD = 1.0
 
-def process_images_on_gpu(gpu_id, file_list, result_dict):
+def process_images_on_gpu(gpu_id, file_list, result_dict, process_id):
     """
     Process images pada GPU tertentu
     """
     # CRITICAL: Set CUDA_VISIBLE_DEVICES untuk force ke GPU ini
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
     
-    print(f"🚀 GPU {gpu_id}: Starting processing {len(file_list)} images...")
+    print(f"🚀 GPU {gpu_id} Process {process_id}: Starting processing {len(file_list)} images...")
     
     # Init model pada GPU ini (akan pakai GPU 0 dari perspective process ini)
     app = FaceAnalysis(name='buffalo_l')
@@ -42,7 +63,7 @@ def process_images_on_gpu(gpu_id, file_list, result_dict):
     paths = []
     face_boxes = []
     
-    for file in tqdm(file_list, desc=f"GPU {gpu_id}", position=gpu_id):
+    for file in tqdm(file_list, desc=f"GPU{gpu_id}P{process_id}", position=process_id):
         img_path = os.path.join(DATA_DIR, file)
         img = cv2.imread(img_path)
         if img is None:
@@ -58,14 +79,15 @@ def process_images_on_gpu(gpu_id, file_list, result_dict):
         face_boxes.append(bbox)
     
     # Simpan hasil ke dict (thread-safe dengan Manager)
-    result_dict[gpu_id] = {
+    result_dict[process_id] = {
         'gpu_id': gpu_id,
+        'process_id': process_id,
         'embeddings': embeddings,
         'paths': paths,
         'face_boxes': face_boxes
     }
     
-    print(f"✅ GPU {gpu_id}: Completed {len(embeddings)} faces")
+    print(f"✅ GPU {gpu_id} Process {process_id}: Completed {len(embeddings)} faces")
 
 def draw_boxes_parallel(worker_id, indices, paths, face_boxes, idx_to_cluster):
     """
@@ -108,6 +130,9 @@ def draw_boxes_parallel(worker_id, indices, paths, face_boxes, idx_to_cluster):
 def main():
     print("\n" + "="*60)
     print("🚀 DUAL GPU FACE CLUSTERING")
+    print(f"   Extraction: {NUM_EXTRACTION_PROCESSES} processes")
+    print(f"   Clustering: {NUM_CLUSTERING_WORKERS} workers")
+    print(f"   Drawing: {NUM_DRAWING_WORKERS} workers")
     print("="*60 + "\n")
     
     # Connect to Redis
@@ -123,40 +148,68 @@ def main():
     all_files = [f for f in os.listdir(DATA_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
     print(f"\n📸 Total files: {len(all_files)}")
     
-    # Split menjadi 2 bagian untuk 2 GPU
-    mid = len(all_files) // 2
-    files_gpu0 = all_files[:mid]
-    files_gpu1 = all_files[mid:]
+    # Split menjadi N bagian untuk parallel extraction
+    chunk_size = len(all_files) // NUM_EXTRACTION_PROCESSES
+    file_chunks = []
     
-    print(f"📦 GPU 0: {len(files_gpu0)} files")
-    print(f"📦 GPU 1: {len(files_gpu1)} files")
-    print("\n🔍 Extracting face embeddings dengan 2 GPU...\n")
+    for i in range(NUM_EXTRACTION_PROCESSES):
+        start_idx = i * chunk_size
+        end_idx = start_idx + chunk_size if i < NUM_EXTRACTION_PROCESSES - 1 else len(all_files)
+        file_chunks.append(all_files[start_idx:end_idx])
+    
+    # Display split info
+    processes_per_gpu = NUM_EXTRACTION_PROCESSES // 2
+    for i in range(NUM_EXTRACTION_PROCESSES):
+        gpu_id = i // processes_per_gpu
+        proc_num = i % processes_per_gpu
+        print(f"📦 GPU {gpu_id} Process {proc_num}: {len(file_chunks[i])} files")
+    
+    print(f"\n🔍 Extracting face embeddings dengan {NUM_EXTRACTION_PROCESSES} processes ({processes_per_gpu} per GPU)...\n")
     
     # Create shared dict untuk hasil (thread-safe)
     manager = Manager()
     result_dict = manager.dict()
     
-    # Buat process untuk masing-masing GPU
-    p0 = Process(target=process_images_on_gpu, args=(0, files_gpu0, result_dict))
-    p1 = Process(target=process_images_on_gpu, args=(1, files_gpu1, result_dict))
+    # Buat processes untuk extraction
+    processes = []
     
-    # Start both processes
+    for process_id in range(NUM_EXTRACTION_PROCESSES):
+        gpu_id = process_id // processes_per_gpu
+        p = Process(target=process_images_on_gpu, args=(gpu_id, file_chunks[process_id], result_dict, process_id))
+        processes.append(p)
+    
+    # Start all processes
     start_time = time.time()
-    p0.start()
-    p1.start()
+    for p in processes:
+        p.start()
     
-    # Wait untuk kedua process selesai
-    p0.join()
-    p1.join()
+    # Wait untuk semua process selesai
+    for p in processes:
+        p.join()
     
     elapsed = time.time() - start_time
     print(f"\n⚡ Extraction selesai dalam {elapsed:.2f} detik")
     
-    # Ambil hasil dari dict dan sort
-    results = [result_dict[0], result_dict[1]]
+    # Ambil hasil dari dict dan sort by process_id
+    # Handle failed processes gracefully
+    results = []
+    failed_processes = []
+    for i in range(NUM_EXTRACTION_PROCESSES):
+        if i in result_dict:
+            results.append(result_dict[i])
+        else:
+            failed_processes.append(i)
+            print(f"⚠️  Process {i} failed (likely GPU OOM)")
+    
+    if failed_processes:
+        print(f"\n❌ {len(failed_processes)} process(es) failed: {failed_processes}")
+        print(f"💡 Try reducing NUM_EXTRACTION_PROCESSES (currently {NUM_EXTRACTION_PROCESSES})")
+        if len(results) == 0:
+            print("❌ All processes failed! Exiting...")
+            return
     
     # Merge semua hasil
-    print("\n🔄 Merging results dari 2 GPU...")
+    print(f"\n🔄 Merging results dari {NUM_EXTRACTION_PROCESSES} processes...")
     all_embeddings = []
     all_paths = []
     all_face_boxes = []
@@ -195,8 +248,8 @@ def main():
     k = min(len(embeddings), len(embeddings))
     distances, indices = index.search(embeddings, k)
     
-    # Build similarity graph menggunakan Union-Find dengan 8 workers
-    print("   🔗 Building similarity graph dengan 8 workers parallel...")
+    # Build similarity graph menggunakan Union-Find dengan parallel workers
+    print(f"   🔗 Building similarity graph dengan {NUM_CLUSTERING_WORKERS} workers parallel...")
     
     def find_pairs_worker(worker_id, start_idx, end_idx, distances, indices, threshold, result_list):
         """Find all similar pairs in assigned range"""
@@ -210,16 +263,15 @@ def main():
         result_list.append((worker_id, pairs))
         print(f"      ✅ Worker {worker_id}: Found {len(pairs)} pairs")
     
-    # Split work among 8 workers
-    num_workers = 8
-    chunk_size = len(embeddings) // num_workers
+    # Split work among clustering workers
+    chunk_size = len(embeddings) // NUM_CLUSTERING_WORKERS
     manager = Manager()
     result_list = manager.list()
     processes = []
     
-    for worker_id in range(num_workers):
+    for worker_id in range(NUM_CLUSTERING_WORKERS):
         start_idx = worker_id * chunk_size
-        end_idx = start_idx + chunk_size if worker_id < num_workers - 1 else len(embeddings)
+        end_idx = start_idx + chunk_size if worker_id < NUM_CLUSTERING_WORKERS - 1 else len(embeddings)
         p = Process(target=find_pairs_worker, args=(worker_id, start_idx, end_idx, distances, indices, THRESHOLD, result_list))
         processes.append(p)
         p.start()
@@ -274,20 +326,19 @@ def main():
             idx_to_cluster[i] = cluster_id
     
     print("\n💾 Saving results...")
-    print("🎨 Drawing bounding boxes dengan 8 workers parallel...\n")
+    print(f"🎨 Drawing bounding boxes dengan {NUM_DRAWING_WORKERS} workers parallel...\n")
     
-    # Split indices menjadi 8 bagian untuk parallel drawing
+    # Split indices untuk parallel drawing
     all_indices = list(range(len(paths)))
-    num_draw_workers = 8
-    chunk_size = len(all_indices) // num_draw_workers
+    chunk_size = len(all_indices) // NUM_DRAWING_WORKERS
     
     # Buat proses parallel untuk drawing
     draw_start = time.time()
     draw_processes = []
     
-    for worker_id in range(num_draw_workers):
+    for worker_id in range(NUM_DRAWING_WORKERS):
         start_idx = worker_id * chunk_size
-        end_idx = start_idx + chunk_size if worker_id < num_draw_workers - 1 else len(all_indices)
+        end_idx = start_idx + chunk_size if worker_id < NUM_DRAWING_WORKERS - 1 else len(all_indices)
         worker_indices = all_indices[start_idx:end_idx]
         
         p = Process(target=draw_boxes_parallel, args=(worker_id, worker_indices, paths, face_boxes, idx_to_cluster))
